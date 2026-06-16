@@ -1,0 +1,45 @@
+---
+title: "The Quiet Decline of Mental Health"
+author: "Ruchi"
+format: html
+---
+
+## The question
+
+People carry real mental distress and still show up to work every day. We read "still functioning" as "fine." I wanted to see what the national numbers actually say.
+
+## What the data shows
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(cansim)
+library(tidyverse)
+
+mh <- get_cansim("13-10-0096")
+
+canada_trend <- mh %>%
+  filter(Indicators == "Perceived mental health, fair or poor",
+         GEO == "Canada (excluding territories)",
+         Sex == "Both sexes",
+         `Age group` == "Total, 12 years and over",
+         Characteristics == "Percent")
+
+ggplot(canada_trend, aes(x = REF_DATE, y = VALUE, group = 1)) +
+  geom_line(linewidth = 1.2, color = "#b22222") +
+  geom_point(size = 2.5, color = "#b22222") +
+  labs(
+    title = "More Canadians are not okay",
+    subtitle = "Share rating their mental health as fair or poor, 2015-2022",
+    x = NULL,
+    y = "Percent"
+  ) +
+  theme_minimal()
+```
+
+The share of Canadians rating their mental health as fair or poor more than doubled between 2015 and 2022, climbing every year and accelerating toward the end. This happened while the country kept working.
+
+## What this shows and what it doesn't
+
+This is the national picture. It does not yet break the trend down by who is employed, or by occupation, so it points to the pattern without isolating working people specifically. That deeper cut is the next step.

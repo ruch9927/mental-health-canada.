@@ -1,7 +1,9 @@
 ---
 title: "The Quiet Decline of Mental Health"
 author: "Ruchi"
-format: html
+format:
+  html:
+    embed-resources: true
 ---
 
 ## The question
@@ -42,4 +44,108 @@ The share of Canadians rating their mental health as fair or poor more than doub
 
 ## What this shows and what it doesn't
 
-This is the national picture. It does not yet break the trend down by who is employed, or by occupation, so it points to the pattern without isolating working people specifically. That deeper cut is the next step.
+This is the national picture. It does not yet break the trend down by who is employed, or by occupation, so it points to the pattern without isolating working people specifically.
+
+## Work Absence in Health Care: A Structural Pattern, Not Just a Pandemic Spike
+
+Using Statistics Canada's Work Absence Rates data (Table 14-10-0191), I examined 
+how many workdays health care and social assistance workers lose per year compared 
+to other sectors, and what's actually driving that loss.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+absence_data <- get_cansim("14-10-0191")
+absence_data$REF_DATE <- as.numeric(absence_data$REF_DATE)
+
+healthcare_absence <- absence_data %>%
+  filter(`North American Industry Classification System (NAICS)` == "Health care and social assistance",
+         REF_DATE >= 2015)
+
+compare_data <- absence_data %>%
+  filter(`Work absence statistics` == "Total days lost per worker in a year",
+         Gender == "Total - Gender",
+         `North American Industry Classification System (NAICS)` %in% 
+           c("Health care and social assistance", "Service-producing industries"),
+         REF_DATE >= 2015)
+
+healthcare_split <- absence_data %>%
+  filter(`North American Industry Classification System (NAICS)` == "Health care and social assistance",
+         Gender == "Total - Gender",
+         `Work absence statistics` %in% c("Days lost per worker in a year, illness or disability",
+                                            "Days lost per worker in a year, personal or family responsibility"),
+         REF_DATE >= 2015)
+```
+
+### Health care absence over time
+
+```{r}
+#| label: fig-healthcare-trend
+#| fig-cap: "Days lost per worker per year, Health Care and Social Assistance, Canada, 2015–present"
+#| echo: false
+
+healthcare_absence %>%
+  filter(`Work absence statistics` == "Total days lost per worker in a year",
+         Gender == "Total - Gender") %>%
+  ggplot(aes(x = REF_DATE, y = VALUE)) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  labs(x = "Year", y = "Days lost") +
+  theme_minimal()
+```
+
+Health care workers lost 14 to 19 days per year over this period, with visible 
+spikes in 2020 and 2022 followed by only partial recovery.
+
+### How health care compares to the broader economy
+
+```{r}
+#| label: fig-healthcare-vs-service
+#| fig-cap: "Health Care vs. All Service-Producing Industries"
+#| echo: false
+
+ggplot(compare_data, aes(x = REF_DATE, y = VALUE, 
+                          color = `North American Industry Classification System (NAICS)`)) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  labs(x = "Year", y = "Days lost", color = "Industry") +
+  theme_minimal()
+```
+
+Health care consistently ran 5 to 6 days higher per worker per year than the 
+broader service-producing sector average across the entire period, a gap that 
+persisted even as both series declined from their 2022 peak. This suggests the 
+elevated absence burden in health care reflects a structural condition of the 
+sector rather than a temporary pandemic effect.
+
+### What's actually driving the gap: illness, not caregiving
+
+```{r}
+#| label: fig-healthcare-reason
+#| fig-cap: "Health Care Absence, By Reason"
+#| echo: false
+
+ggplot(healthcare_split, aes(x = REF_DATE, y = VALUE, color = `Work absence statistics`)) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  labs(x = "Year", y = "Days lost") +
+  theme_minimal()
+```
+
+Breaking the health care absence figure down by cause shows the gap is driven 
+almost entirely by illness or disability, which ran 12 to 16+ days across the 
+period, while personal or family responsibility stayed flat at 3 to 5 days 
+throughout, barely moving even through 2020–2022.
+
+### Takeaway
+
+Health care and social assistance workers carry a persistently higher absence 
+burden than the broader Canadian workforce, and that burden is driven by illness 
+or disability rather than caregiving responsibilities. This points toward the 
+occupational health cost of the work itself, high emotional demand, understaffing, 
+and sustained patient-facing stress, rather than a work-life balance issue. It 
+connects functional presence at work (simply showing up) to a separate, harder 
+question: whether workers in high-demand roles are genuinely well, or working 
+through conditions that eventually surface as time away from work entirely.

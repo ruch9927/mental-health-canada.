@@ -5,6 +5,15 @@ format:
   html:
     embed-resources: true
 ---
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(cansim)
+library(tidyverse)
+library(plotly)  
+library(crosstalk)
+```
 
 ## The question
 
@@ -149,3 +158,89 @@ and sustained patient-facing stress, rather than a work-life balance issue. It
 connects functional presence at work (simply showing up) to a separate, harder 
 question: whether workers in high-demand roles are genuinely well, or working 
 through conditions that eventually surface as time away from work entirely.
+
+## Resilience Across the Life Course: A Different Kind of Steadiness
+
+Health care absence data shows workers staying in the workforce despite rising 
+illness-driven time away. A related question is psychological: how do Canadians 
+themselves describe their ability to recover from hard times? Statistics Canada's 
+2016 General Social Survey (Table 13-10-0107) asked exactly this, as part of a 
+nine-item resilience scale.
+
+```{r}
+#| label: fig-resilience-bounce-back
+#| fig-cap: "Percent reporting they 'always or often' bounce back quickly after hard times, by age group, Canada 2016"
+#| echo: false
+#| message: false
+#| warning: false
+
+resilience_data <- get_cansim("13-10-0107")
+resilience_data$REF_DATE <- as.numeric(resilience_data$REF_DATE)
+
+resilience_bounce_back <- resilience_data %>%
+  dplyr::filter(Resilience == "Ability to bounce back quickly after hard times",
+                Response == "Always or often",
+                Estimates == "Percentage of persons",
+                Sex == "Both sexes",
+                GEO == "Canada")
+
+resilience_clean <- resilience_bounce_back %>%
+  dplyr::filter(`Age group` %in% c("15 to 24 years", "25 to 34 years", "35 to 44 years",
+                                    "45 to 54 years", "55 to 64 years", 
+                                    "65 to 74 years", "75 years and over"))
+
+p_resilience <- ggplot(resilience_clean, aes(x = `Age group`, y = VALUE)) +
+  geom_col(fill = "#2c7fb8") +
+  labs(x = "Age Group", y = "Percent") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+ggplotly(p_resilience, tooltip = c("x", "y"))
+```
+
+Self-reported resilience is remarkably stable across the working-age population, 
+ranging narrowly between 74% and 79% from ages 15 through 74, with only a modest 
+dip among those 75 and older. Unlike the work absence data, which shows a clear 
+structural gap for health care workers, resilience itself does not appear to 
+decline with the pressures of working life, at least not in a way this national 
+snapshot can detect. This raises an open question worth exploring further: are 
+people in high-demand occupations, like health care, reporting similar resilience 
+to the general population while still carrying a disproportionate illness-related 
+absence burden? If so, that would suggest the issue is not a personal deficit in 
+coping, but a structural mismatch between what a role demands and what any 
+consistent level of individual resilience can absorb.
+## Comparing Industries: An Interactive View
+
+The charts above focus on health care specifically. This view lets you select 
+and compare any combination of industries directly.
+
+```{r}
+#| label: fig-industry-interactive
+#| fig-cap: "Days lost per worker per year, by industry (select to filter)"
+#| echo: false
+#| message: false
+#| warning: false
+
+industry_all <- absence_data %>%
+  dplyr::filter(`Work absence statistics` == "Total days lost per worker in a year",
+                Gender == "Total - Gender",
+                REF_DATE >= 2015)
+
+shared_industry <- SharedData$new(industry_all, ~`North American Industry Classification System (NAICS)`)
+
+p_interactive <- plot_ly(shared_industry, x = ~REF_DATE, y = ~VALUE,
+                          color = ~`North American Industry Classification System (NAICS)`,
+                         colors = "Set3",
+                          type = 'scatter', mode = 'lines+markers') %>%
+  layout(title = "Days Lost Per Worker Per Year, by Industry",
+         xaxis = list(title = "Year",dtick=1, tickangle=-45),
+         yaxis = list(title = "Days lost"),
+margin = list(r=150, b=80))
+
+bscols(
+  widths =c(2,10),
+  filter_select("industry_filter", "Select an Industry", shared_industry, 
+                ~`North American Industry Classification System (NAICS)`),
+  p_interactive
+)
+```

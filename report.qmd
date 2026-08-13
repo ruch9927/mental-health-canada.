@@ -209,6 +209,7 @@ to the general population while still carrying a disproportionate illness-relate
 absence burden? If so, that would suggest the issue is not a personal deficit in 
 coping, but a structural mismatch between what a role demands and what any 
 consistent level of individual resilience can absorb.
+
 ## Comparing Industries: An Interactive View
 
 The charts above focus on health care specifically. This view lets you select 
